@@ -1,8 +1,9 @@
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 
 # Feedback control, lets try coding feedforward control as well and then the feedforward with feedback adjustment like ECE486
-# Going to program first the case where I dont care about my final pose and then where I do care about my final pose
+# Going to program first the case where I dont care about my final pose angle and then where I do care about my final pose angle
 class PID():
     def __init__(self, kp, kd, ki):
         self.kp = kp
@@ -29,6 +30,15 @@ class Pose:
         self.y = y
         self.theta = theta
 
+    def positional_error(self, other):
+        dx = other.x - self.x
+        dy = other.y - self.y
+        error_vector = (dx, dy)
+        error_magnitude = math.hypot(dx, dy)
+        return error_vector, error_magnitude
+
+
+
 # Simulation stuff
 dt = 0.1
 T = 300
@@ -38,17 +48,17 @@ steps = int(T/dt)
 x, y, theta = 0.0, 0.0, 0.0
 
 #Controls
-v = 0.3  # m/s
+v = 0.2  # m/s
 #w = 0.2  # rad/s
 
 #Robot path
 xs, ys = [], []
 current_pose = Pose(0.0, 0.0, 0.0)
-goal_pose = Pose(5.0, 5.0, 0.0)
+goal_pose = Pose(-5.0, 5.0, 0.0)
 
 
 #Controller
-pid = PID(kp=0.5, kd=0.99, ki=0.05)
+pid = PID(kp=0.7, kd=0.05, ki=0.01)
 
 for step in range(steps):
     # Adjust step
@@ -65,10 +75,17 @@ for step in range(steps):
     xs.append(x)
     ys.append(y)
 
+    err_vec, err_mag = current_pose.positional_error(goal_pose)
+
+    if (err_mag < 0.1):
+        break 
+
+
 # Plotting
 plt.figure(figsize=(6,6))
 plt.plot(xs, ys, label="Trajectory")
-plt.quiver(xs[-1], ys[-1], np.cos(theta), np.sin(theta), scale=5, color="r")
+plt.quiver(xs[-1], ys[-1], np.cos(theta), np.sin(theta), scale=6, color="r")
+plt.quiver(goal_pose.x, goal_pose.y, np.cos(goal_pose.theta), np.sin(goal_pose.theta), scale=6, color="g")
 plt.xlabel("X [m]")
 plt.ylabel("Y [m]")
 plt.axis("equal")
